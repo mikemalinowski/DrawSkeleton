@@ -29,12 +29,12 @@ public class DrawSkeleton : MonoBehaviour
     private List<Transform> bones = new List<Transform>();
     private Mesh boneMesh;
     private float dynamicBoneSize = 1.0f;
-    
+
     // These are user facing variables which will show in the inspector
     public bool drawBones = true;
-    public bool drawAxis = false;    
-    public float boneSize = 0.0f;
+    public bool drawAxis = false;
     public bool setBoneSizeDynamically = true;
+    public float boneSize = 0.0f;
     public Color color = Color.greenYellow;
 
     /// <summary>
@@ -45,15 +45,24 @@ public class DrawSkeleton : MonoBehaviour
     {
         CacheSkeleton();
     }
-    
+
     /// <summary>
     /// When the component is first initialised we trigger a full cache
     /// of all teh required details
     /// </summary>
-    public void Awake()
+    private void Awake()
     {
         CacheSkeleton();
     }
+
+    /// <summary>
+    /// When the component is re-enabled lets re-cache as we assume some changes
+    /// might have been made.
+    /// </summary>
+	private void OnEnabled()
+	{
+		CacheSkeleton();
+	}
 
     /// <summary>
     /// When requested to draw gizmo's we cycle through the cached bones and
@@ -62,6 +71,12 @@ public class DrawSkeleton : MonoBehaviour
     /// </summary>
     void OnDrawGizmos()
     {
+        // Do not draw our gizmo's if we're disabled
+        if (!enabled)
+        {
+            return;
+        }
+
         foreach (Transform bone in bones)
         {
             if (bone.parent && drawBones)
@@ -71,7 +86,7 @@ public class DrawSkeleton : MonoBehaviour
             if (drawAxis)
             {
                 DrawAxis(bone);
-            }    
+            }
         }
     }
 
@@ -83,9 +98,9 @@ public class DrawSkeleton : MonoBehaviour
     {
         CacheBones();
         CalculateBoneSize();
-        
+
         // Note that we do not automatically rebuild the bone
-        // mesh, as this will never change. Therefore we only 
+        // mesh, as this will never change. Therefore we only
         // rebuild it if it has not yet been built.
         if (!boneMesh)
         {
@@ -93,8 +108,23 @@ public class DrawSkeleton : MonoBehaviour
         }
 
     }
-    
+
     /// <summary>
+    /// This is a public facing read only way of accessing the
+    /// expected bone size
+    /// </summary>
+    /// <returns></returns>
+    public float GetDynamicBoneSize()
+    {
+        return dynamicBoneSize;
+    }
+
+    public List<Transform> Bones()
+    {
+        return bones;
+    }
+
+/// <summary>
     /// To make the usage of this component as simple as possible we dont
     /// want to have the user need to list all the bones. Instead we look
     /// at all the children for skinned meshes and take the bone lists from
