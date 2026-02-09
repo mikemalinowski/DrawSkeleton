@@ -29,10 +29,10 @@ public class DrawSkeleton : MonoBehaviour
     private List<Transform> bones = new List<Transform>();
     private Mesh boneMesh;
     private float dynamicBoneSize = 1.0f;
-
+    
     // These are user facing variables which will show in the inspector
     public bool drawBones = true;
-    public bool drawAxis = false;
+    public bool drawAxis = false;    
     public float boneSize = 0.0f;
     public bool setBoneSizeDynamically = true;
     public Color color = Color.greenYellow;
@@ -45,7 +45,7 @@ public class DrawSkeleton : MonoBehaviour
     {
         CacheSkeleton();
     }
-
+    
     /// <summary>
     /// When the component is first initialised we trigger a full cache
     /// of all teh required details
@@ -66,12 +66,12 @@ public class DrawSkeleton : MonoBehaviour
         {
             if (bone.parent && drawBones)
             {
-                DrawBone(bone, bone.parent);
+                DrawBone(bone, bone.parent, Selection.Contains(bone.parent.gameObject));
             }
             if (drawAxis)
             {
                 DrawAxis(bone);
-            }
+            }    
         }
     }
 
@@ -83,9 +83,9 @@ public class DrawSkeleton : MonoBehaviour
     {
         CacheBones();
         CalculateBoneSize();
-
+        
         // Note that we do not automatically rebuild the bone
-        // mesh, as this will never change. Therefore we only
+        // mesh, as this will never change. Therefore we only 
         // rebuild it if it has not yet been built.
         if (!boneMesh)
         {
@@ -93,7 +93,7 @@ public class DrawSkeleton : MonoBehaviour
         }
 
     }
-
+    
     /// <summary>
     /// To make the usage of this component as simple as possible we dont
     /// want to have the user need to list all the bones. Instead we look
@@ -105,20 +105,19 @@ public class DrawSkeleton : MonoBehaviour
     private void CacheBones()
     {
         bones = new List<Transform>();
-
+        
         SkinnedMeshRenderer[] skinnedMeshComponents = GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: false);
-
-
+        
+        
         foreach (SkinnedMeshRenderer mesh in skinnedMeshComponents)
         {
             foreach (Transform bone in mesh.bones)
             {
-                Debug.Log("Caching Bone For Skeleton Drawing : " + bone.name);
                 bones.Add(bone);
             }
         }
     }
-
+    
     /// <summary>
     /// This function specifically manages the drawing of the axis of a
     /// transform. This allows a user to see exactly what the axis looks
@@ -127,15 +126,15 @@ public class DrawSkeleton : MonoBehaviour
     /// <param name="bone"></param>
     private void DrawAxis(Transform bone)
     {
-
+        
         Vector3 position = bone.position;
 
         Gizmos.color = Color.red;
         Gizmos.DrawLine(position, position + bone.right * dynamicBoneSize);
-
+        
         Gizmos.color = Color.green;
         Gizmos.DrawLine(position, position + bone.up * dynamicBoneSize);
-
+        
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(position, position + bone.forward * dynamicBoneSize);
     }
@@ -146,44 +145,49 @@ public class DrawSkeleton : MonoBehaviour
     /// </summary>
     /// <param name="bone"></param>
     /// <param name="parent"></param>
-    private void DrawBone(Transform bone, Transform parent)
+    private void DrawBone(Transform bone, Transform parent, bool highlight)
     {
         // If we're selected we always show as white otherwise
         // set the colour to the user defined colour
-        bool isSelected = Selection.activeTransform == bone;
-        Gizmos.color = isSelected ? Color.white : color;
-
+        bool isSelected = Selection.activeTransform == parent;
+        Gizmos.color = highlight ? Color.white : color;
+        
         // Get the bone and the parent positions
         Vector3 bonePosition = bone.position;
         Vector3 parentPosition = parent.position;
-
+        
         // Determine the length of this bone
         float boneLength = (parentPosition -  bonePosition).magnitude;
-
+        
         // Create a scale vector. Our width is the bone size either set
         // by the user or defined by the bounds of the skinned mesh. The
         // length is then simply the length between the bone and the
         // parent.
         Vector3 scale = new Vector3(
-            dynamicBoneSize,
-            dynamicBoneSize,
+            dynamicBoneSize, 
+            dynamicBoneSize, 
             boneLength
         );
-
+        
         // Calculate the rotation of the bone by taking the look direction
         // between the two positions
         Vector3 direction = bonePosition - parentPosition;
+		if (direction == Vector3.zero)
+		{
+			direction.z = 1.0f;
+		}
         Quaternion rotation = Quaternion.LookRotation(direction);
-
+		
+        
         // Finally we draw the mesh
         Gizmos.DrawMesh(
-            boneMesh,
-            parentPosition,
-            rotation,
+            boneMesh, 
+            parentPosition, 
+            rotation, 
             scale
         );
     }
-
+    
     /// <summary>
     /// Here we determine the size our bones should be. If a user has disabled
     /// the dynamic bone size option then we simply apply the bone size they
@@ -195,14 +199,14 @@ public class DrawSkeleton : MonoBehaviour
     private void CalculateBoneSize()
     {
         // If the user has turned off dynamic bone size then we do not have
-        // to calculate anything. Instead we just take the value they have
+        // to calculate anything. Instead we just take the value they have 
         // given us.
         if (!setBoneSizeDynamically)
         {
             dynamicBoneSize = boneSize;
             return;
         }
-
+        
         // If there are no bones to draw we just set a base value of 1. But
         // note that even though we have set it to one, nothing will actually
         // draw because there are no bones.
@@ -211,7 +215,7 @@ public class DrawSkeleton : MonoBehaviour
             dynamicBoneSize = 1.0f;
             return;
         }
-
+        
         // Instance a bounds object and start adding all the bone positions
         // into it
         Bounds bounds = new Bounds(bones[0].position, Vector3.zero);
@@ -219,22 +223,22 @@ public class DrawSkeleton : MonoBehaviour
         {
             bounds.Encapsulate(bones[i].position);
         }
-
+        
         // Finally we calculate the bone size as being 1% of the bounds
-        // size.
+        // size. 
         dynamicBoneSize = bounds.size.magnitude * 0.01f;
     }
-
+    
     /// <summary>
     /// This function will generate a mesh which we will use to draw
-    /// a bone.
+    /// a bone. 
     /// </summary>
     /// <returns></returns>
     private static Mesh ConstructBoneMesh()
     {
         // Instance a new mesh object
-        Mesh mesh = new Mesh();
-
+        Mesh mesh = new Mesh(); 
+        
         // Define our vertex positions
         Vector3[] vertices = new Vector3[]
         {
@@ -247,7 +251,7 @@ public class DrawSkeleton : MonoBehaviour
         };
 
         // Now we give our triangle list, where each set of three
-        // indices represent a triangle and each indice is a the
+        // indices represent a triangle and each indice is a the 
         // index of the position in the vertices list.
         int[] triangles = new int[]
         {
@@ -260,11 +264,11 @@ public class DrawSkeleton : MonoBehaviour
             3, 2, 5,
             2, 0, 5,
         };
-
+        
         // Apply our two lists
         mesh.vertices = vertices;
         mesh.triangles = triangles;
-
+        
         // Ask the mesh to update its normals and bounds
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
